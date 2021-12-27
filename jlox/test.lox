@@ -1,8 +1,5 @@
-// this is a comment
-(( 3 )) {2} // grouping stuff
-!*+-/=<> <= == // operators
-"this is a string" // string literal
-3.1415
-200
-and or while var booboo
-
+// basic lox script to test statements
+print "one";
+print true;
+print 1 + 2 < 3;
+print 1 + 2 * 3;
