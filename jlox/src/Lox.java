@@ -72,9 +72,11 @@ public class Lox {
         if (hadError) return;
 
         if (debugMode) {
+            System.out.println("==== AST DUMP ====");
             for (Stmt statement : statements) {
                 System.out.println(new AstPrinter().print(statement));
             }
+            System.out.println("==================\n");
         }
         interpreter.interpret(statements);
     }

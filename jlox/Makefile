@@ -28,7 +28,7 @@ all: $(TARGET_PATH)
 run: $(TARGET_PATH) FORCE
 	java -cp $(BIN)/ $(PKG).$(TARGET) $(LOX_FLAGS)
 
-*.lox: $(TARGET_PATH) FORCE
+%.lox: $(TARGET_PATH) FORCE
 	java -cp $(BIN)/ $(PKG).$(TARGET) $(LOX_FLAGS) $@
 
 $(TARGET_PATH): generate-ast $(SRC_FILES)
