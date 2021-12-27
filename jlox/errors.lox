@@ -1,0 +1,5 @@
+print a; // undefined variable name
+1 + 2 // missing semicolon
+var b = a + 2; // undefined variable name
+var a = "3";
+print 2 + a; // non-matching types for operator +

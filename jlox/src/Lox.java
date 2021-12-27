@@ -13,14 +13,26 @@ public class Lox {
     private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
     static boolean hadRuntimeError = false;
+    static boolean debugMode = false;
 
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
-            System.out.println("Usage: jlox [script]");
-            // Exit codes follow conventions defined in the UNIX "sysexits.h" header.
-            System.exit(64);
+            if (args[0].equals("-d")) {
+                debugMode = true;
+                runFile(args[1]);
+            } else {
+                System.out.println("Usage: jlox [-d] <script>");
+                // Exit codes follow conventions defined in the UNIX "sysexits.h"
+                // header.
+                System.exit(64);
+            }
         } else if (args.length == 1) {
-            runFile(args[0]);
+            if (args[0].equals("-d")) {
+                debugMode = true;
+                runPrompt();
+            } else {
+                runFile(args[0]);
+            }
         } else {
             runPrompt();
         }
@@ -59,6 +71,11 @@ public class Lox {
         // Stop if there was a syntax error.
         if (hadError) return;
 
+        if (debugMode) {
+            for (Stmt statement : statements) {
+                System.out.println(new AstPrinter().print(statement));
+            }
+        }
         interpreter.interpret(statements);
     }
 

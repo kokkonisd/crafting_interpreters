@@ -16,35 +16,74 @@ class Parser {
         this.tokens = tokens;
     }
 
+
+    // Grammar:
+    //
+    // program     -> declaration* EOF ;
+    // declaration -> varDecl | statement ;
+    // statement   -> exprStmt | printStmt ;
+    // varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
+    // exprStmt    -> expression ";" ;
+    // printStmt   -> "print" expression ";" ;
+    //
+    // expression  -> assignment;
+    // assignment  -> IDENTIFIER "=" assignment | equality ;
+    // equality    -> comparison ( ( "!=" | "==" ) comparison )* ;
+    // comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+    // term        -> factor ( ( "-" | "+" ) factor )* ;
+    // factor      -> unary ( ( "/" | "*" ) unary )* ;
+    // unary       -> ( "!" | "-" ) unary | primary ;
+    // primary     -> NUMBER
+    //                | STRING
+    //                | "true"
+    //                | "false"
+    //                | "nil"
+    //                | "(" expression ")"
+    //                | IDENTIFIER ;
+
+    // Main program rule
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
-            statements.add(statement());
+            statements.add(declaration());
         }
 
         return statements;
     }
 
-    // Grammar:
-    //
-    // program    -> statement* EOF ;
-    // statement  -> exprStmt | printStmt ;
-    // exprStmt   -> expression ";" ;
-    // printStmt  -> "print" expression ";" ;
-    //
-    // expression -> equality;
-    // equality   -> comparison ( ( "!=" | "==" ) comparison )* ;
-    // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    // term       -> factor ( ( "-" | "+" ) factor )* ;
-    // factor     -> unary ( ( "/" | "*" ) unary )* ;
-    // unary      -> ( "!" | "-" ) unary | primary ;
-    // primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+    // Declaration rule
+    private Stmt declaration() {
+        try {
+            if (match(VAR)) return varDeclaration();
+
+            return statement();
+        } catch (ParseError error) {
+            // Synchronize here in case we don't manage to parse the statement (or
+            // variable declaration) correctly.
+            synchronize();
+            return null;
+        }
+    }
     
     // Statement rule
     private Stmt statement() {
         if (match(PRINT)) return printStatement();
 
         return expressionStatement();
+    }
+
+    // Variable declaration rule
+    private Stmt varDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect variable name.");
+
+        // All variables are initialized to null by default.
+        Expr initializer = null;
+        if (match(EQUAL)) {
+            initializer = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after variable declaration.");
+        return new Stmt.Var(name, initializer);
     }
 
     // Expression statement rule
@@ -63,7 +102,26 @@ class Parser {
 
     // Expression rule
     private Expr expression() {
-        return equality();
+        return assignment();
+    }
+
+    // Assignment rule
+    private Expr assignment() {
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable)expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     // Equality rule
@@ -137,6 +195,10 @@ class Parser {
 
         if (match(NUMBER, STRING)) {
             return new Expr.Literal(previous().literal);
+        }
+
+        if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
         }
 
         if (match(LEFT_PAREN)) {

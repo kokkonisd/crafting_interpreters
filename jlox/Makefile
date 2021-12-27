@@ -1,8 +1,15 @@
+DEBUG ?= 1
 JC=javac
 
 SRC=src
 BIN=bin
 PKG=com.craftinginterpreters.lox
+
+ifeq ($(DEBUG), 1)
+	LOX_FLAGS=-d
+else
+	LOX_FLAGS=
+endif
 
 TOOL_SRC=tools
 TOOL_PKG=$(subst lox,tools,$(PKG))
@@ -19,10 +26,10 @@ TOOL_PATHS=$(addprefix $(BIN)/$(subst .,/,$(TOOL_PKG))/,$(addsuffix .class,$(TOO
 all: $(TARGET_PATH)
 
 run: $(TARGET_PATH) FORCE
-	java -cp $(BIN)/ $(PKG).$(TARGET)
+	java -cp $(BIN)/ $(PKG).$(TARGET) $(LOX_FLAGS)
 
 *.lox: $(TARGET_PATH) FORCE
-	java -cp $(BIN)/ $(PKG).$(TARGET) $@
+	java -cp $(BIN)/ $(PKG).$(TARGET) $(LOX_FLAGS) $@
 
 $(TARGET_PATH): generate-ast $(SRC_FILES)
 	$(JC) $(subst generate-ast,,$^) -d $(BIN)/
