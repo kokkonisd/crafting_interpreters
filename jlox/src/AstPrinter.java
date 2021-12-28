@@ -54,19 +54,20 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitVarStmt(Stmt.Var stmt) {
+        if (stmt.initializer == null) return "(var " + stmt.name.lexeme + " nil)";
         return parenthesize("var " + stmt.name.lexeme, stmt.initializer);
     }
 
     @Override
     public String visitBlockStmt(Stmt.Block stmt) {
         StringBuilder builder = new StringBuilder();
+        builder.append("(block\n    ");
         for (Stmt statement : stmt.statements) {
-            builder.append(statement.accept(this));
-            builder.append("\n");
+            builder.append(statement.accept(this).replace("\n", "\n    "));
+            builder.append("\n    ");
         }
-
-        // Remove the last newline
-        return builder.substring(0, builder.length() - 1).toString();
+        // Remove the last 4 spaces and add a closing parenthesis
+        return builder.substring(0, builder.length() - 4) + ")";
     }
 
     @Override
@@ -87,6 +88,17 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         }
         builder.append("\n)");
 
+        return builder.toString();
+    }
+
+    @Override
+    public String visitWhileStmt(Stmt.While stmt) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("(while ");
+        builder.append(stmt.condition.accept(this));
+        builder.append("\n    ");
+        builder.append(stmt.body.accept(this).replace("\n", "\n    "));
+        builder.append("\n)");
         return builder.toString();
     }
 

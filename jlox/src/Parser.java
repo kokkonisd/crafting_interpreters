@@ -1,6 +1,7 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.craftinginterpreters.lox.TokenType.*;
@@ -21,10 +22,14 @@ class Parser {
     //
     // program     -> declaration* EOF ;
     // declaration -> varDecl | statement ;
-    // statement   -> exprStmt | ifStmt | printStmt | block;
+    // statement   -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | block;
     // block       -> "{" declaration* "}" ;
-    // varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
     // ifStmt      -> "if" "(" expression ")" statement ( "else" statement )? ;
+    // whileStmt   -> "while" "(" expression ")" statement ;
+    // forStmt     -> "for" "(" ( varDecl | exprStmt | ";" )
+    //                expression? ";"
+    //                expression? ")" statement ;
+    // varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
     // exprStmt    -> expression ";" ;
     // printStmt   -> "print" expression ";" ;
     //
@@ -72,6 +77,8 @@ class Parser {
     // Statement rule
     private Stmt statement() {
         if (match(IF)) return ifStatement();
+        if (match(WHILE)) return whileStatement();
+        if (match(FOR)) return forStatement();
         if (match(PRINT)) return printStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -90,6 +97,80 @@ class Parser {
         return statements;
     }
 
+    // If statement rule
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    // While statement rule
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Stmt body = statement();
+        
+        return new Stmt.While(condition, body);
+    }
+
+    // For statement rule
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+        
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        Stmt body = statement();
+
+        // If there's an increment, it needs to be executed at the end of the loop body.
+        if (increment != null) {
+            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+        }
+        
+        // If no condition is specified, we create a condition that's equal to `true` to
+        // create an infinite loop.
+        // We also transform the whole thing into a "while" loop.
+        if (condition == null) condition = new Expr.Literal(true);
+        body = new Stmt.While(condition, body);
+
+        // If there is an initializer, it needs to be scoped with the loop and it needs
+        // to be executed before the loop starts.
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+        return body;
+    }
+
+
+
     // Variable declaration rule
     private Stmt varDeclaration() {
         Token name = consume(IDENTIFIER, "Expect variable name.");
@@ -102,21 +183,6 @@ class Parser {
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
-    }
-
-    // If statement rule
-    private Stmt ifStatement() {
-        consume(LEFT_PAREN, "Expect '(' after 'if'.");
-        Expr condition = expression();
-        consume(RIGHT_PAREN, "Expect ')' after if condition.");
-
-        Stmt thenBranch = statement();
-        Stmt elseBranch = null;
-        if (match(ELSE)) {
-            elseBranch = statement();
-        }
-
-        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     // Expression statement rule
