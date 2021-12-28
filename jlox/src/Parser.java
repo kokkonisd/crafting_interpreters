@@ -21,14 +21,17 @@ class Parser {
     //
     // program     -> declaration* EOF ;
     // declaration -> varDecl | statement ;
-    // statement   -> exprStmt | printStmt | block;
+    // statement   -> exprStmt | ifStmt | printStmt | block;
     // block       -> "{" declaration* "}" ;
     // varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
+    // ifStmt      -> "if" "(" expression ")" statement ( "else" statement )? ;
     // exprStmt    -> expression ";" ;
     // printStmt   -> "print" expression ";" ;
     //
     // expression  -> assignment;
-    // assignment  -> IDENTIFIER "=" assignment | equality ;
+    // assignment  -> IDENTIFIER "=" assignment | logic_or ;
+    // logic_or    -> logic_and ( "or" logic_and )* ;
+    // logic_and   -> equality ( "and" equality )* ;
     // equality    -> comparison ( ( "!=" | "==" ) comparison )* ;
     // comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     // term        -> factor ( ( "-" | "+" ) factor )* ;
@@ -68,6 +71,7 @@ class Parser {
     
     // Statement rule
     private Stmt statement() {
+        if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -100,6 +104,21 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
+    // If statement rule
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
     // Expression statement rule
     private Stmt expressionStatement() {
         Expr expr = expression();
@@ -121,7 +140,7 @@ class Parser {
 
     // Assignment rule
     private Expr assignment() {
-        Expr expr = equality();
+        Expr expr = or();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -133,6 +152,32 @@ class Parser {
             }
 
             error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
+    }
+
+    // Logic OR rule
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    // Logic AND rule
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
         }
 
         return expr;

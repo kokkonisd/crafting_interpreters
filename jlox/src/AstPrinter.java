@@ -22,6 +22,8 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitLiteralExpr(Expr.Literal expr) {
         if (expr.value == null) return "nil";
+        // If it's a string, enclose it in quotation marks to show that
+        if (expr.value.equals(expr.value.toString())) return "\"" + expr.value + "\"";
         return expr.value.toString();
     }
 
@@ -65,6 +67,27 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
         // Remove the last newline
         return builder.substring(0, builder.length() - 1).toString();
+    }
+
+    @Override
+    public String visitLogicalExpr(Expr.Logical expr) {
+        return parenthesize(expr.operator.lexeme, expr.left, expr.right);
+    }
+
+    @Override
+    public String visitIfStmt(Stmt.If stmt) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("(if ");
+        builder.append(stmt.condition.accept(this));
+        builder.append("\n    ");
+        builder.append(stmt.thenBranch.accept(this).replace("\n", "\n    "));
+        if (stmt.elseBranch != null) {
+            builder.append("\nelse\n    ");
+            builder.append(stmt.elseBranch.accept(this).replace("\n", "\n    "));
+        }
+        builder.append("\n)");
+
+        return builder.toString();
     }
 
     private String parenthesize(String name, Expr... exprs) {

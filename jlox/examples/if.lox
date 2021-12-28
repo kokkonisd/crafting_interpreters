@@ -1,0 +1,20 @@
+var a = true;
+
+if (a) print "a is true!"; else print "a is false!";
+
+if (3 < 2) {
+    print "Math is broken!!!";
+} else {
+    print "Math is okay.";
+}
+
+var name = "Tom";
+
+if (name == "Tom") print "Hi Tom!"; else print "I don't know you.";
+
+if (3 < 2 or name == "Tom") print "Well either math is broken or your name is Tom.";
+
+// Show that a dangling "else" gets assigned to the closest "if".
+if (true) if (false) print "inner if"; else print "This should print";
+if (false) if (true) print "inner if"; else print "This shouldn't print";
+
