@@ -1,5 +1,8 @@
 package com.craftinginterpreters.lox;
 
+import java.util.List;
+import java.util.ArrayList;
+
 class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     String print(Expr expr) {
         return expr.accept(this);
@@ -76,6 +79,15 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitCallExpr(Expr.Call expr) {
+        // Make an array with all of the call data (the callee expression plus the
+        // arguments).
+        List<Expr> call_data = new ArrayList<>(expr.arguments);
+        call_data.add(0, expr.callee);
+        return parenthesize("call", call_data.toArray(new Expr[0]));
+    }
+
+    @Override
     public String visitIfStmt(Stmt.If stmt) {
         StringBuilder builder = new StringBuilder();
         builder.append("(if ");
@@ -100,6 +112,34 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         builder.append(stmt.body.accept(this).replace("\n", "\n    "));
         builder.append("\n)");
         return builder.toString();
+    }
+
+    @Override
+    public String visitFunctionStmt(Stmt.Function stmt) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("(fn ");
+        builder.append(stmt.name.lexeme);
+        builder.append(" (");
+        for (Token param : stmt.params) {
+            if (param != stmt.params.get(0)) {
+                builder.append(", ");
+            }
+            builder.append(param.lexeme);
+        }
+        builder.append(")\n    ");
+        for (Stmt statement : stmt.body) {
+            if (statement != stmt.body.get(0)) {
+                builder.append("\n    ");
+            }
+            builder.append(statement.accept(this).replace("\n", "\n    "));
+        }
+        builder.append("\n)");
+        return builder.toString();
+    }
+
+    @Override
+    public String visitReturnStmt(Stmt.Return stmt) {
+        return parenthesize("return", stmt.value);
     }
 
     private String parenthesize(String name, Expr... exprs) {

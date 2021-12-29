@@ -21,17 +21,27 @@ class Parser {
     // Grammar:
     //
     // program     -> declaration* EOF ;
-    // declaration -> varDecl | statement ;
-    // statement   -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | block;
+    // declaration -> funDecl | varDecl | statement ;
+    // statement   -> exprStmt
+    //                | ifStmt
+    //                | whileStmt
+    //                | forStmt
+    //                | printStmt
+    //                | returnStmt
+    //                | block;
     // block       -> "{" declaration* "}" ;
     // ifStmt      -> "if" "(" expression ")" statement ( "else" statement )? ;
     // whileStmt   -> "while" "(" expression ")" statement ;
     // forStmt     -> "for" "(" ( varDecl | exprStmt | ";" )
     //                expression? ";"
     //                expression? ")" statement ;
+    // funDecl     -> "fun" function;
+    // function    -> IDENTIFIER "(" parameters? ")" block ;
+    // parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;
     // varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
     // exprStmt    -> expression ";" ;
     // printStmt   -> "print" expression ";" ;
+    // returnStmt  -> "return" expression? ";" ;
     //
     // expression  -> assignment;
     // assignment  -> IDENTIFIER "=" assignment | logic_or ;
@@ -41,7 +51,9 @@ class Parser {
     // comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     // term        -> factor ( ( "-" | "+" ) factor )* ;
     // factor      -> unary ( ( "/" | "*" ) unary )* ;
-    // unary       -> ( "!" | "-" ) unary | primary ;
+    // unary       -> ( "!" | "-" ) unary | call ;
+    // call        -> primary ( "(" arguments? ")" )* ;
+    // arguments   -> expression ( "," expression )* ;
     // primary     -> NUMBER
     //                | STRING
     //                | "true"
@@ -63,6 +75,7 @@ class Parser {
     // Declaration rule
     private Stmt declaration() {
         try {
+            if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
 
             return statement();
@@ -80,6 +93,7 @@ class Parser {
         if (match(WHILE)) return whileStatement();
         if (match(FOR)) return forStatement();
         if (match(PRINT)) return printStatement();
+        if (match(RETURN)) return returnStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
@@ -169,7 +183,26 @@ class Parser {
         return body;
     }
 
+    // Function rule
+    private Stmt.Function function(String kind) {
+        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        List<Token> parameters = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
 
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, parameters, body);
+    }
 
     // Variable declaration rule
     private Stmt varDeclaration() {
@@ -197,6 +230,18 @@ class Parser {
         Expr value = expression();
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+
+    // Return statement rule
+    private Stmt returnStatement() {
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     // Expression rule
@@ -309,7 +354,39 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        return primary();
+        return call();
+    }
+
+    // Call rule
+    private Expr call() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    // Helper for the call rule (more or less corresponding to the arguments rule)
+    private Expr finishCall(Expr callee) {
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                // Limit number of arguments to be coherent with clox
+                if (arguments.size() >= 255) {
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+        return new Expr.Call(callee, paren, arguments);
     }
 
     // Primary rule
