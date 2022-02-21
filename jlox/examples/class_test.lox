@@ -4,4 +4,6 @@ class Heyyo {
     }
 }
 
+var myheyyo = Heyyo();
 print Heyyo;
+print myheyyo;
