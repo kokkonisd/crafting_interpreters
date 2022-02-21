@@ -153,6 +153,19 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         return builder.toString();
     }
 
+    @Override
+    public String visitGetExpr(Expr.Get expr) {
+        return "(get " + expr.object.accept(this) + "." + expr.name.lexeme + ")";
+    }
+
+    @Override
+    public String visitSetExpr(Expr.Set expr) {
+        return (
+            "(set " + expr.object.accept(this) + "." + expr.name.lexeme + " " +
+            expr.value.accept(this) + ")"
+        );
+    }
+
     private String parenthesize(String name, Expr... exprs) {
         StringBuilder builder = new StringBuilder();
 

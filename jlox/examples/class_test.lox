@@ -7,3 +7,7 @@ class Heyyo {
 var myheyyo = Heyyo();
 print Heyyo;
 print myheyyo;
+
+// Test property/field set/get
+myheyyo.message = "foo";
+print myheyyo.message;

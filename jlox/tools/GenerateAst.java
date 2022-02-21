@@ -19,11 +19,14 @@ public class GenerateAst {
             "Assign   : Token name, Expr value",
             "Binary   : Expr left, Token operator, Expr right",
             // Here the closing parenthesis token is useful when reporting a runtime
-            // error caused by a function call.
+            // error caused by a function call, as it helps us get the position of the
+            // error in the source code.
             "Call     : Expr callee, Token paren, List<Expr> arguments",
+            "Get      : Expr object, Token name",
             "Grouping : Expr expression",
             "Literal  : Object value",
             "Logical  : Expr left, Token operator, Expr right",
+            "Set      : Expr object, Token name, Expr value",
             "Unary    : Token operator, Expr right",
             "Variable : Token name"
         ));
