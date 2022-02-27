@@ -11,3 +11,8 @@ print myheyyo;
 // Test property/field set/get
 myheyyo.message = "foo";
 print myheyyo.message;
+
+
+// Test methods
+print myheyyo.sayHi();
+print Heyyo().sayHi();
