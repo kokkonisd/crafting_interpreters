@@ -3,14 +3,34 @@ class Multiplier {
         this.factor = factor;
     }
 
-    multiply(number) {
+    operate(number) {
         return number * this.factor;
     }
 }
 
+class Divider < Multiplier {
+    operate(number) {
+        if (this.factor == 0) {
+            print "Cannot divide by 0.";
+            return;
+        }
+        return number / this.factor;
+    }
+}
+    
+print "== MULTIPLICATION ==";
 var m = Multiplier(2);
-print m.multiply(2);
+print m.operate(2);
 m.factor = 4;
-print m.multiply(2);
+print m.operate(2);
 m = Multiplier(-1);
-print m.multiply(2);
+print m.operate(2);
+
+print "";
+print "== DIVISION ==";
+var d = Divider(2);
+print d.operate(2);
+d.factor = 4;
+print d.operate(2);
+d = Divider(0);
+print d.operate(2);

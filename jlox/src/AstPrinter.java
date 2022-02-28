@@ -139,7 +139,10 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitReturnStmt(Stmt.Return stmt) {
-        return parenthesize("return", stmt.value);
+        if (stmt.value != null) {
+            return parenthesize("return", stmt.value);
+        }
+        return "return";
     }
 
     @Override
@@ -147,9 +150,13 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         StringBuilder builder = new StringBuilder();
         builder.append("(class ");
         builder.append(stmt.name.lexeme);
+        if (stmt.superclass != null) {
+            builder.append("< " + stmt.superclass.name.lexeme);
+        }
         builder.append("\n    ");
 
-        for (Stmt method : stmt.methods) {
+        for (Stmt.Function method : stmt.methods) {
+            System.out.println(method.name.lexeme);
             if (method != stmt.methods.get(0)) {
                 builder.append("\n    ");
             }

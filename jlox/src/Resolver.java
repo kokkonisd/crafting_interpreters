@@ -250,6 +250,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         define(stmt.name);
 
+        if (stmt.superclass != null) {
+            // Catch the case where a class inherits from itself (illegal).
+            if (stmt.name.lexeme.equals(stmt.superclass.name.lexeme)) {
+                Lox.error(stmt.superclass.name, "A class can't inherit from itself.");
+            }
+
+            resolve(stmt.superclass);
+        }
+
         beginScope();
         scopes.peek().put("this", true);
 
