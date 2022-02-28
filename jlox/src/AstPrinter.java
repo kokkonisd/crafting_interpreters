@@ -150,6 +150,9 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         builder.append("\n    ");
 
         for (Stmt method : stmt.methods) {
+            if (method != stmt.methods.get(0)) {
+                builder.append("\n    ");
+            }
             builder.append(method.accept(this).replace("\n", "\n    "));
         }
 
@@ -168,6 +171,11 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
             "(set " + expr.object.accept(this) + "." + expr.name.lexeme + " " +
             expr.value.accept(this) + ")"
         );
+    }
+
+    @Override
+    public String visitThisExpr(Expr.This expr) {
+        return "this";
     }
 
     private String parenthesize(String name, Expr... exprs) {

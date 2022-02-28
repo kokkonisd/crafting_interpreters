@@ -1,6 +1,14 @@
 class Heyyo {
     sayHi() {
-        return "hiya";
+        if (this.message) {
+            return this.message;
+        } else {
+            return "hiya";
+        }
+    }
+
+    getHiCb() {
+        return this.sayHi;
     }
 }
 
@@ -15,4 +23,13 @@ print myheyyo.message;
 
 // Test methods
 print myheyyo.sayHi();
-print Heyyo().sayHi();
+//print Heyyo().sayHi();
+
+// Test callbacks
+var mycb = myheyyo.getHiCb();
+var cb = Heyyo().getHiCb();
+print "Callback is " + mycb();
+//cb();
+
+myheyyo.message = "bar";
+print "New callback is " + mycb();
