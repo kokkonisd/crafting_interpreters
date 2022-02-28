@@ -1,0 +1,19 @@
+class A {
+    method() {
+        print "method A";
+    }
+}
+
+class B < A {
+    method() {
+        print "method B";
+    }
+
+    test() {
+        super.method();
+    }
+}
+
+class C < B {}
+
+C().test();

@@ -9,11 +9,23 @@ class Multiplier {
 }
 
 class Divider < Multiplier {
-    operate(number) {
-        if (this.factor == 0) {
+    init(factor) {
+        if (factor == 0) {
             print "Cannot divide by 0.";
+            this.canRun = false;
             return;
         }
+
+        super.init(factor);
+        this.canRun = true;
+    }
+
+    operate(number) {
+        if (!this.canRun) {
+            print "The object was initialized incorrectly.";
+            return;
+        }
+
         return number / this.factor;
     }
 }

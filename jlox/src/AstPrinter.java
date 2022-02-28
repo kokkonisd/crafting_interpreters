@@ -151,7 +151,7 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         builder.append("(class ");
         builder.append(stmt.name.lexeme);
         if (stmt.superclass != null) {
-            builder.append("< " + stmt.superclass.name.lexeme);
+            builder.append(" < " + stmt.superclass.name.lexeme);
         }
         builder.append("\n    ");
 
@@ -183,6 +183,11 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitThisExpr(Expr.This expr) {
         return "this";
+    }
+
+    @Override
+    public String visitSuperExpr(Expr.Super expr) {
+        return "super." + expr.method.lexeme;
     }
 
     private String parenthesize(String name, Expr... exprs) {
