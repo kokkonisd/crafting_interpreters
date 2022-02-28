@@ -1,0 +1,16 @@
+class Multiplier {
+    init(factor) {
+        this.factor = factor;
+    }
+
+    multiply(number) {
+        return number * this.factor;
+    }
+}
+
+var m = Multiplier(2);
+print m.multiply(2);
+m.factor = 4;
+print m.multiply(2);
+m = Multiplier(-1);
+print m.multiply(2);

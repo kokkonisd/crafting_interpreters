@@ -1,10 +1,10 @@
 class Heyyo {
+    init() {
+        this.message = "hiya";
+    }
+
     sayHi() {
-        if (this.message) {
-            return this.message;
-        } else {
-            return "hiya";
-        }
+        return this.message;
     }
 
     getHiCb() {
@@ -18,18 +18,19 @@ print myheyyo;
 
 // Test property/field set/get
 myheyyo.message = "foo";
-print myheyyo.message;
+print "New message is: " + myheyyo.message;
 
 
 // Test methods
-print myheyyo.sayHi();
-//print Heyyo().sayHi();
+print "Default instance says " + Heyyo().sayHi();
+print "My instance says " + myheyyo.sayHi();
 
 // Test callbacks
 var mycb = myheyyo.getHiCb();
 var cb = Heyyo().getHiCb();
-print "Callback is " + mycb();
-//cb();
+print "Default callback is " + cb();
+print "My callback is " + mycb();
 
+Heyyo().message = "boo"; // This should have no effect
 myheyyo.message = "bar";
 print "New callback is " + mycb();
