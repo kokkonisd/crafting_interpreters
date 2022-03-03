@@ -1,3 +1,6 @@
 jlox/bin/
 jlox/src/Expr.java
 jlox/src/Stmt.java
+
+clox/build/
+clox/bin/
