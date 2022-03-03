@@ -25,8 +25,10 @@ fun fizzbuzzize(number) {
     // return value: the fizzbuzz value of the number
     var result = "";
 
-    if (mod(number, 3) == 0) result = result + "fizz";
-    if (mod(number, 5) == 0) result = result + "buzz";
+    //if (mod(number, 3) == 0) result = result + "fizz";
+    //if (mod(number, 5) == 0) result = result + "buzz";
+    if (number % 3 == 0) result = result + "fizz";
+    if (number % 5 == 0) result = result + "buzz";
 
     if (result == "") return number;
     return result;

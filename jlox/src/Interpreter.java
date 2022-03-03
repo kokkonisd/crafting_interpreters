@@ -226,6 +226,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             case STAR:
                 checkNumberOperands(expr.operator, left, right);
                 return (double)left * (double)right;
+            case MODULO:
+                checkNumberOperands(expr.operator, left, right);
+                // Here, we need to cast the operands into ints (since a modulo only
+                // accepts ints), but also the entire result into double, as all our
+                // numbers are represented as doubles internally (in the interpreter).
+                return (double)((int)(double)left % (int)(double)right);
             case BANG_EQUAL:
                 return !isEqual(left, right);
             case EQUAL_EQUAL:
