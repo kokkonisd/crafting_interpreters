@@ -1,0 +1,38 @@
+fun mod(number, modulo) {
+    // Get the modulo of a number.
+    //
+    // This function essentially implements `number` % `modulo`.
+    //
+    // number: the number to take the modulo of
+    // modulo: the modulo to divide the number by
+    // return value: `number` % `modulo`
+    while (number >= modulo) {
+        number = number - modulo;
+    }
+
+    return number;
+}
+
+fun fizzbuzzize(number) {
+    // Convert a number (integer) into a fizzbuzz value.
+    //
+    // Numbers that are divisible by 3 will return "fizz".
+    // Numbers that are divisible by 5 will return "buzz".
+    // Numbers that are divisible by 3 and by 5 will return "fizzbuzz".
+    // All other numbers will just return the number value itself.
+    //
+    // number: the number to fizzbuzzize
+    // return value: the fizzbuzz value of the number
+    var result = "";
+
+    if (mod(number, 3) == 0) result = result + "fizz";
+    if (mod(number, 5) == 0) result = result + "buzz";
+
+    if (result == "") return number;
+    return result;
+}
+
+for (var i = 1; i < 100; i = i + 1) {
+    print fizzbuzzize(i);
+}
+
