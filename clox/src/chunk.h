@@ -2,12 +2,14 @@
 #define clox_chunk_h
 
 #include "common.h"
+#include "value.h"
 
 /** 
  * Each instruction has a one-byte operation code.
  * These are defined here.
  **/
 typedef enum {
+    OP_CONSTANT,
     OP_RETURN,
 } OpCode;
 
@@ -19,6 +21,8 @@ typedef struct {
     int count;
     int capacity;
     uint8_t * code;
+    int * lines;
+    ValueArray constants;
 } Chunk;
 
 /**
@@ -28,11 +32,15 @@ void initChunk (Chunk * chunk);
 /**
  * Write a new chunk to the end of the array.
  **/
-void writeChunk (Chunk * chunk, uint8_t byte);
+void writeChunk (Chunk * chunk, uint8_t byte, int line);
 /**
  * Destroy a chunk.
  **/
 void freeChunk (Chunk * chunk);
+/**
+ * Add a constant to a chunk.
+ **/
+int addConstant (Chunk * chunk, Value value);
 
 #endif
 
