@@ -8,7 +8,7 @@ int main (int argc, const char *argv [])
     Chunk chunk;
     initChunk(&chunk);
 
-    int constant = addConstant(&chunk, 1.2);
+    int constant = addConstant(&chunk, 1.213);
     writeChunk(&chunk, OP_CONSTANT, 123);
     writeChunk(&chunk, constant, 123);
 

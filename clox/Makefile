@@ -3,6 +3,7 @@ CC=gcc
 CFLAGS=-Wall -Wextra -Wpedantic
 
 SRC=src
+INC=inc
 BIN=bin
 BUILD=build
 TARGET=clox
@@ -14,7 +15,7 @@ else
 endif
 
 SRC_FILES=$(wildcard $(SRC)/*.c)
-HEADER_FILES=$(wildcard $(SRC)/*.h)
+INC_FILES=$(wildcard $(INC)/*.h)
 OBJ_FILES=$(patsubst $(SRC)/%,$(BUILD)/%,$(patsubst %.c,%.o,$(SRC_FILES)))
 
 
@@ -25,11 +26,11 @@ all: $(TARGET_PATH)
 run: $(TARGET_PATH)
 	./$(TARGET_PATH)
 
-$(TARGET_PATH): $(BIN) $(BUILD) $(OBJ_FILES) $(HEADER_FILES)
+$(TARGET_PATH): $(BIN) $(BUILD) $(OBJ_FILES) $(INC_FILES)
 	$(CC) $(OBJ_FILES) -o $@
 
 $(BUILD)/%.o: $(SRC)/%.c
-	$(CC) $(CFLAGS) -c $^ -o $@
+	$(CC) $(CFLAGS) -I$(INC)/ -c $^ -o $@
 
 $(BIN):
 	@mkdir -p $(BIN)/
