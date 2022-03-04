@@ -9,7 +9,7 @@ BUILD=build
 TARGET=clox
 
 ifeq ($(DEBUG), 1)
-	CFLAGS+=-g -O0
+	CFLAGS+=-g -O0 -DDEBUG_TRACE_EXECUTION
 else
 	CFLAGS+=-O3
 endif
