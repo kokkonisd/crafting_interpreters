@@ -43,6 +43,17 @@ static InterpretResult run ()
 {
 #   define READ_BYTE() (*vm.ip++)
 #   define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+// This is a macro hack to make sure this macro works everywhere.
+// We want to make sure all instructions share the same scope; you might think we could
+// just wrap them in {}, but that wouldn't be "semicolon-at-the-end"-friendly (meaning
+// we couldn't do `BINARY_OP(+);`). So instead we use this dummy do-while loop that only
+// runs once.
+#   define BINARY_OP(op) \
+        do { \
+            double b = pop(); \
+            double a = pop(); \
+            push(a op b); \
+        } while(false)
 
     for (;;) {
 #       ifdef DEBUG_TRACE_EXECUTION
@@ -63,6 +74,26 @@ static InterpretResult run ()
                 push(constant);
                 break;
             }
+            case OP_ADD: {
+                BINARY_OP(+);
+                break;
+            }
+            case OP_SUBTRACT: {
+                BINARY_OP(-);
+                break;
+            }
+            case OP_MULTIPLY: {
+                BINARY_OP(*);
+                break;
+            }
+            case OP_DIVIDE: {
+                BINARY_OP(/);
+                break;
+            }
+            case OP_NEGATE: {
+                push(-pop());
+                break;
+            }
             case OP_RETURN: {
                 printValue(pop());
                 printf("\n");
@@ -72,6 +103,7 @@ static InterpretResult run ()
      }
 #    undef READ_BYTE
 #    undef READ_CONSTANT
+#    undef BINARY_OP
 }
 
 
