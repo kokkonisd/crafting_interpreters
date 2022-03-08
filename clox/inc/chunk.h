@@ -1,8 +1,10 @@
 #ifndef clox_chunk_h
 #define clox_chunk_h
 
+
 #include "common.h"
 #include "value.h"
+
 
 /** 
  * Each instruction has a one-byte operation code.
@@ -30,22 +32,27 @@ typedef struct {
     ValueArray constants;
 } Chunk;
 
+
 /**
  * Initialize a chunk.
  **/
 void initChunk (Chunk * chunk);
+
 /**
  * Write a new chunk to the end of the array.
  **/
 void writeChunk (Chunk * chunk, uint8_t byte, int line);
+
 /**
  * Destroy a chunk.
  **/
 void freeChunk (Chunk * chunk);
+
 /**
  * Add a constant to a chunk.
  **/
 int addConstant (Chunk * chunk, Value value);
+
 
 #endif
 
