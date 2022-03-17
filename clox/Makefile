@@ -26,6 +26,9 @@ all: $(TARGET_PATH)
 run: $(TARGET_PATH)
 	./$(TARGET_PATH)
 
+%.lox: $(TARGET_PATH) FORCE
+	./$(TARGET_PATH) $@
+
 $(TARGET_PATH): $(BIN) $(BUILD) $(OBJ_FILES) $(INC_FILES)
 	$(CC) $(OBJ_FILES) -o $@
 
@@ -43,3 +46,5 @@ clean:
 
 
 .PHONY: clean run
+
+FORCE: ;
