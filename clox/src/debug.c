@@ -7,7 +7,7 @@
 void disassembleChunk (Chunk * chunk, const char * name)
 {
     printf("== DISASSEMBLING CHUNK %s ==\n", name);
-    printf("OPCODE LINE INSTRUCTION     OFFSET VALUE\n");
+    printf("ADDRESS LINE INSTRUCTION     OFFSET VALUE\n");
     printf("----------------------------------------\n");
 
     for (int offset = 0; offset < chunk->count;) {
@@ -39,7 +39,7 @@ static int constantInstruction (const char * name, Chunk * chunk, int offset)
 
 int disassembleInstruction (Chunk * chunk, int offset)
 {
-    printf("%04d   ", offset);
+    printf("   %04d ", offset);
     if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
         printf("   | ");
     } else {
