@@ -41,6 +41,11 @@ typedef struct {
 
 
 /**
+ * Check if two values are equal.
+ **/
+bool valuesEqual (Value a, Value b);
+
+/**
  * Initialize a Value array.
  **/
 void initValueArray (ValueArray * array);
