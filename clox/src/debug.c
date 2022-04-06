@@ -7,8 +7,8 @@
 void disassembleChunk (Chunk * chunk, const char * name)
 {
     printf("== DISASSEMBLING CHUNK %s ==\n", name);
-    printf("ADDRESS LINE INSTRUCTION     OFFSET VALUE\n");
-    printf("----------------------------------------\n");
+    printf("ADDRESS | LINE | INSTRUCTION | OFFSET | VALUE\n");
+    printf("---------------------------------------------\n");
 
     for (int offset = 0; offset < chunk->count;) {
         offset = disassembleInstruction(chunk, offset);
@@ -30,7 +30,7 @@ static int constantInstruction (const char * name, Chunk * chunk, int offset)
     // The constant address is stored right after the operand, so we need to look ahead
     // by one.
     uint8_t constant = chunk->code[offset + 1];
-    printf("%-16s %5d '", name, constant);
+    printf("%-11s   %-5d    '", name, constant);
     printValue(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 2;
@@ -39,11 +39,11 @@ static int constantInstruction (const char * name, Chunk * chunk, int offset)
 
 int disassembleInstruction (Chunk * chunk, int offset)
 {
-    printf("   %04d ", offset);
+    printf("%04d      ", offset);
     if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
-        printf("   | ");
+        printf("|      ");
     } else {
-        printf("%4d ", chunk->lines[offset]);
+        printf("%-4d   ", chunk->lines[offset]);
     }
 
     uint8_t instruction = chunk->code[offset];
