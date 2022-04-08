@@ -7,8 +7,8 @@
 void disassembleChunk (Chunk * chunk, const char * name)
 {
     printf("== DISASSEMBLING CHUNK %s ==\n", name);
-    printf("ADDRESS | LINE | INSTRUCTION | OFFSET | VALUE\n");
-    printf("---------------------------------------------\n");
+    printf("ADDRESS | LINE | INSTRUCTION      | OFFSET | VALUE\n");
+    printf("--------------------------------------------------\n");
 
     for (int offset = 0; offset < chunk->count;) {
         offset = disassembleInstruction(chunk, offset);
@@ -30,7 +30,7 @@ static int constantInstruction (const char * name, Chunk * chunk, int offset)
     // The constant address is stored right after the operand, so we need to look ahead
     // by one.
     uint8_t constant = chunk->code[offset + 1];
-    printf("%-11s   %-5d    '", name, constant);
+    printf("%-16s   %-5d    '", name, constant);
     printValue(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 2;
@@ -56,6 +56,14 @@ int disassembleInstruction (Chunk * chunk, int offset)
             return simpleInstruction("OP_TRUE", offset);
         case OP_FALSE:
             return simpleInstruction("OP_FALSE", offset);
+        case OP_POP:
+            return simpleInstruction("OP_POP", offset);
+        case OP_GET_GLOBAL:
+            return constantInstruction("OP_GET_GLOBAL", chunk, offset);
+        case OP_DEFINE_GLOBAL:
+            return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
+        case OP_SET_GLOBAL:
+            return constantInstruction("OP_SET_GLOBAL", chunk, offset);
         case OP_EQUAL:
             return simpleInstruction("OP_EQUAL", offset);
         case OP_GREATER:
@@ -74,6 +82,8 @@ int disassembleInstruction (Chunk * chunk, int offset)
             return simpleInstruction("OP_NOT", offset);
         case OP_NEGATE:
             return simpleInstruction("OP_NEGATE", offset);
+        case OP_PRINT:
+            return simpleInstruction("OP_PRINT", offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
         default:
