@@ -47,16 +47,6 @@ void printValue (Value value)
 }
 
 
-void printObject (Value value)
-{
-    switch (OBJ_TYPE(value)) {
-        case OBJ_STRING:
-            printf("%s", AS_CSTRING(value));
-            break;
-    }
-}
-
-
 bool valuesEqual (Value a, Value b)
 {
     if (a.type != b.type) return false;
