@@ -1,0 +1,55 @@
+fun vector (x1, y1, x2, y2) {
+    fun object (message) {
+        fun add (other) {
+            return vector(x1 + other("x1"), y1 + other("y1"), x2 + other("x2"), y2 + other("y2"));
+        }
+
+        fun sub (other) {
+            return vector(x1 - other("x1"), y1 - other("y1"), x2 - other("x2"), y2 - other("y2"));
+        }
+
+        fun show () {
+            print "====";
+            print x1;
+            print y1;
+            print "----";
+            print x2;
+            print y2;
+            print "====";
+        }
+
+        if (message == "x1") return x1;
+        if (message == "y1") return y1;
+        if (message == "x2") return x2;
+        if (message == "y2") return y2;
+        if (message == "add") return add;
+        if (message == "sub") return sub;
+        if (message == "show") return show;
+
+        print "unknown message";
+    }
+
+    return object;
+}
+
+
+var v1 = vector(0, 0, 1, 1);
+var v2 = vector(0, 0, -1, -1);
+
+var v3 = v1("add")(v2);
+var v4 = v1("sub")(v2);
+
+print "V1:";
+v1("show")();
+
+print "";
+print "V2:";
+v2("show")();
+
+print "";
+print "V1 + V2:";
+v3("show")();
+
+print "";
+print "V1 - V2:";
+v4("show")();
