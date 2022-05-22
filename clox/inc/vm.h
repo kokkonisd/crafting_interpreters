@@ -12,7 +12,7 @@
 
 
 typedef struct {
-    ObjFunction * function;
+    ObjClosure * closure;
     uint8_t * ip;
     Value * slots;
 } CallFrame;
@@ -32,6 +32,8 @@ typedef struct {
     Table globals;
     // Interned strings.
     Table strings;
+    // Upvalues that are still on the stack.
+    ObjUpvalue * openUpvalues;
     Obj * objects;
 } VM;
 

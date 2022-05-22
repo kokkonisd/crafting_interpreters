@@ -26,10 +26,27 @@ static Obj * allocateObject (size_t size, ObjType type)
 }
 
 
+ObjClosure * newClosure (ObjFunction * function)
+{
+    ObjUpvalue ** upvalues = ALLOCATE(ObjUpvalue *, function->upvalueCount);
+    for (int i = 0; i < function->upvalueCount; i++) {
+        upvalues[i] = NULL;
+    }
+
+    ObjClosure * closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    closure->function = function;
+    closure->upvalues = upvalues;
+    closure->upvalueCount = function->upvalueCount;
+
+    return closure;
+}
+
+
 ObjFunction * newFunction ()
 {
     ObjFunction * function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
     function->arity = 0;
+    function->upvalueCount = 0;
     function->name = NULL;
     initChunk(&function->chunk);
 
@@ -104,6 +121,17 @@ ObjString * copyString (const char * chars, int length)
 }
 
 
+ObjUpvalue * newUpvalue (Value * slot)
+{
+    ObjUpvalue * upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+    upvalue->closed = NIL_VAL;
+    upvalue->location = slot;
+    upvalue->next = NULL;
+
+    return upvalue;
+}
+
+
 static void printFunction (ObjFunction * function)
 {
     if (function->name == NULL) {
@@ -118,6 +146,9 @@ static void printFunction (ObjFunction * function)
 void printObject (Value value)
 {
     switch (OBJ_TYPE(value)) {
+        case OBJ_CLOSURE:
+            printFunction(AS_CLOSURE(value)->function);
+            break;
         case OBJ_FUNCTION:
             printFunction(AS_FUNCTION(value));
             break;
@@ -126,6 +157,11 @@ void printObject (Value value)
             break;
         case OBJ_STRING:
             printf("%s", AS_CSTRING(value));
+            break;
+        case OBJ_UPVALUE:
+            // This will actually never execute, as the does not have direct access to
+            // upvalues.
+            printf("upvalue");
             break;
     }
 }
