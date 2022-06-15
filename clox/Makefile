@@ -1,6 +1,8 @@
 DEBUG ?= 1
-CC=gcc
-CFLAGS=-Wall -Wextra -Wpedantic
+CC = gcc
+CFLAGS = -Wall -Wextra -Wpedantic
+DEBUG_FLAGS = -DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE -DDEBUG_STRESS_GC \
+			  -DDEBUG_LOG_GC
 
 SRC=src
 INC=inc
@@ -9,7 +11,7 @@ BUILD=build
 TARGET=clox
 
 ifeq ($(DEBUG), 1)
-	CFLAGS+=-g -O0 -DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE
+	CFLAGS+=-g -O0 $(DEBUG_FLAGS)
 else
 	CFLAGS+=-O3
 endif

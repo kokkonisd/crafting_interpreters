@@ -34,6 +34,10 @@ ObjString * tableFindString (
     Table * table, const char * chars, int length, uint32_t hash
 );
 
+void tableRemoveWhite (Table * table);
+
+void markTable (Table * table);
+
 
 #endif
 

@@ -68,6 +68,13 @@ void initVM ()
 {
     resetStack();
     vm.objects = NULL;
+    vm.bytesAllocated = 0;
+    vm.nextGC = 1024 * 1024;
+
+    // Initialize the working list stack for the GC.
+    vm.grayCount = 0;
+    vm.grayCapacity = 0;
+    vm.grayStack = NULL;
 
     initTable(&vm.globals);
     initTable(&vm.strings);
@@ -203,8 +210,10 @@ static bool isFalsey (Value value)
 
 static void concatenate ()
 {
-    ObjString * b = AS_STRING(pop());
-    ObjString * a = AS_STRING(pop());
+    // Instead of popping the strings eagerly, peek them instead; this will allow the
+    // GC to find them on the stack.
+    ObjString * b = AS_STRING(peek(0));
+    ObjString * a = AS_STRING(peek(1));
 
     int length = a->length + b->length;
     char * chars = ALLOCATE(char, length + 1);
@@ -213,6 +222,11 @@ static void concatenate ()
     chars[length] = '\0';
 
     ObjString * result = takeString(chars, length);
+
+    // Now that the new string is created, we can pop the two old strings off the stack.
+    pop();
+    pop();
+
     push(OBJ_VAL(result));
 }
 

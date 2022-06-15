@@ -2,6 +2,7 @@
 
 #include "chunk.h"
 #include "memory.h"
+#include "vm.h"
 
 
 void initChunk (Chunk * chunk)
@@ -41,7 +42,15 @@ void freeChunk (Chunk * chunk)
 
 int addConstant (Chunk * chunk, Value value)
 {
+    // Push the constant to the stack temporarily, so that the GC can find it if a run
+    // is triggered before it is actually added to the constant table.
+    push(value);
+
     writeValueArray(&chunk->constants, value);
+
+    // Now that it's added, we can pop it off.
+    pop(value);
+
     return chunk->constants.count - 1;
 }
 

@@ -17,10 +17,16 @@ static Obj * allocateObject (size_t size, ObjType type)
 {
     Obj * object = (Obj *) reallocate(NULL, 0, size);
     object->type = type;
+    object->isMarked = false;
 
     // Track the object in the VM's linked list.
     object->next = vm.objects;
     vm.objects = object;
+
+
+#   ifdef DEBUG_LOG_GC
+        printf("%p allocate %zu for %d\n", (void *) object, size, type);
+#   endif
 
     return object;
 }
@@ -69,8 +75,16 @@ static ObjString * allocateString (char * chars, int length, uint32_t hash)
     string->length = length;
     string->chars = chars;
     string->hash = hash;
+
+    // Before interning the string, we should push it to the VM stack temporarily so
+    // that the GC has a chance of finding it if it is triggered.
+    push(OBJ_VAL(string));
+
     // Intern the string.
     tableSet(&vm.strings, string, NIL_VAL);
+
+    // Now that the string is interned, we can pop it off.
+    pop();
 
     return string;
 }

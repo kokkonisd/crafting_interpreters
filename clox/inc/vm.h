@@ -34,7 +34,16 @@ typedef struct {
     Table strings;
     // Upvalues that are still on the stack.
     ObjUpvalue * openUpvalues;
+    // The total number of bytes of managed memory.
+    size_t bytesAllocated;
+    // The threshold that triggers a garbage collection run.
+    size_t nextGC;
     Obj * objects;
+
+    // GC stuff.
+    int grayCount;
+    int grayCapacity;
+    Obj ** grayStack;
 } VM;
 
 /**
