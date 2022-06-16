@@ -138,6 +138,11 @@ static bool callValue (Value callee, int argCount)
 {
     if (IS_OBJ(callee)) {
         switch (OBJ_TYPE(callee)) {
+            case OBJ_CLASS: {
+                ObjClass * klass = AS_CLASS(callee);
+                vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+                return true;
+            }
             case OBJ_CLOSURE:
                 return call(AS_CLOSURE(callee), argCount);
             case OBJ_NATIVE: {
@@ -328,6 +333,52 @@ static InterpretResult run ()
                 *frame->closure->upvalues[slot]->location = peek(0);
                 break;
             }
+            case OP_GET_PROPERTY: {
+                if (!IS_INSTANCE(peek(0))) {
+                    runtimeError("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance * instance = AS_INSTANCE(peek(0));
+                ObjString * name = READ_STRING();
+
+                Value value;
+                if (tableGet(&instance->fields, name, &value)) {
+                    pop(); // Instance.
+                    push(value);
+                    break;
+                }
+
+                runtimeError("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            case OP_SET_PROPERTY: {
+                if (!IS_INSTANCE(peek(1))) {
+                    runtimeError("Only instances have fields.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // When we execute this, the top of the stack looks like this:
+                //
+                // ------------------------
+                // ... | instance | value |
+                // ------------------------
+                //
+                // We need to fetch the instance, store the value in the table, pop
+                // the value (and hold on to it) and the instance, and then push the
+                // value back on the stack. This is because the result of this setter
+                // expression is the assigned value, so we need to put it on the stack
+                // so that we can potentially use it (e.g. in a `print`).
+                ObjInstance * instance = AS_INSTANCE(peek(1));
+                tableSet(&instance->fields, READ_STRING(), peek(0));
+                // Get the value.
+                Value value = pop();
+                // Pop the instance off the stack.
+                pop();
+                // Put value back, to be used as the result of the expression.
+                push(value);
+                break;
+            }
             case OP_EQUAL: {
                 Value b = pop();
                 Value a = pop();
@@ -443,6 +494,10 @@ static InterpretResult run ()
                 vm.stackTop = frame->slots;
                 push(result);
                 frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
+            case OP_CLASS: {
+                push(OBJ_VAL(newClass(READ_STRING())));
                 break;
             }
         }
