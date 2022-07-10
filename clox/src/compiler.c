@@ -61,6 +61,8 @@ typedef struct {
 
 typedef enum {
     TYPE_FUNCTION,
+    TYPE_INITIALIZER,
+    TYPE_METHOD,
     TYPE_SCRIPT
 } FunctionType;
 
@@ -76,8 +78,15 @@ typedef struct Compiler {
 } Compiler;
 
 
+typedef struct ClassCompiler {
+    struct ClassCompiler * enclosing;
+} ClassCompiler;
+
+
 Parser parser;
 Compiler * current = NULL;
+// To track the current nearest enclosing class.
+ClassCompiler * currentClass = NULL;
 Chunk * compilingChunk;
 
 
@@ -203,9 +212,16 @@ static int emitJump (uint8_t instruction)
 
 static void emitReturn ()
 {
-    // If the function reached the end of its body without returning anything, it needs
-    // to return `nil`.
-    emitByte(OP_NIL);
+    if (current->type == TYPE_INITIALIZER) {
+        // If the method is an initializer, we need to always return the instance.
+        // Slot 0 should always contain the instance.
+        emitBytes(OP_GET_LOCAL, 0);
+    } else {
+        // If the function reached the end of its body without returning anything, it 
+        // needs to return `nil`.
+        emitByte(OP_NIL);
+    }
+
     emitByte(OP_RETURN);
 }
 
@@ -263,8 +279,17 @@ static void initCompiler (Compiler * compiler, FunctionType type)
     Local * local = &current->locals[current->localCount++];
     local->depth = 0;
     local->isCaptured = false;
-    local->name.start = "";
-    local->name.length = 0;
+    // Use the 0th slot to store `this` if needed.
+    // This should only be done for methods, as using `this` inside a function
+    // declaration which is itself inside a method should resolve to the outer method's
+    // receiver.
+    if (type != TYPE_FUNCTION) {
+        local->name.start = "this";
+        local->name.length = 4;
+    } else {
+        local->name.start = "";
+        local->name.length = 0;
+    }
 }
 
 
@@ -634,6 +659,20 @@ static void variable (bool canAssign)
 }
 
 
+static void this_ (bool canAssign)
+{
+    // Check that the use of `this` is legal (i.e. that we are in a class).
+    if (currentClass == NULL) {
+        error("Can't use 'this' outside of a class.");
+        return;
+    }
+
+    // This is treated as a lexically scoped local variable.
+    // You can't assign to `this`, so we pass `false` to `variable()`.
+    variable(false);
+}
+
+
 static void unary (bool canAssign)
 {
     TokenType operatorType = parser.previous.type;
@@ -685,7 +724,7 @@ ParseRule rules[] = {
     [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
     [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
-    [TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_THIS]          = {this_,    NULL,   PREC_NONE},
     [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
     [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
     [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
@@ -782,17 +821,52 @@ static void function (FunctionType type)
 }
 
 
+static void method ()
+{
+    consume(TOKEN_IDENTIFIER, "Expect method name.");
+    uint8_t constant = identifierConstant(&parser.previous);
+
+    FunctionType type = TYPE_METHOD;
+    // If we're compiling an initializer, we need to change the type, to make sure the
+    // VM knows to return an instance after calling the initializer.
+    if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
+        type = TYPE_INITIALIZER;
+    }
+
+    function(type);
+    emitBytes(OP_METHOD, constant);
+}
+
+
 static void classDeclaration ()
 {
     consume(TOKEN_IDENTIFIER, "Expect class name.");
+    Token className = parser.previous;
     uint8_t nameConstant = identifierConstant(&parser.previous);
     declareVariable();
 
     emitBytes(OP_CLASS, nameConstant);
     defineVariable(nameConstant);
 
+    // Push a new ClassCompiler onto the "class stack", to record the stack of the
+    // enclosing classes.
+    ClassCompiler classCompiler;
+    classCompiler.enclosing = currentClass;
+    currentClass = &classCompiler;
+
+    // Load the class back on top of the stack, so that the methods can be bound to that
+    // class.
+    namedVariable(className, false);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+        method();
+    }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+    // Pop off the class name.
+    emitByte(OP_POP);
+
+    // "Pop off" the class and restore the enclosing one.
+    currentClass = currentClass->enclosing;
 }
 
 
@@ -928,6 +1002,10 @@ static void returnStatement ()
         // If there is no return value, the statement implicitly returns `nil`.
         emitReturn();
     } else {
+        if (current->type == TYPE_INITIALIZER) {
+            error("Can't return a value from an initializer.");
+        }
+
         expression();
         consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
         emitByte(OP_RETURN);

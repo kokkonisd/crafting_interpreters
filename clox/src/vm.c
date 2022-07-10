@@ -79,6 +79,13 @@ void initVM ()
     initTable(&vm.globals);
     initTable(&vm.strings);
 
+    // Create & intern the "init" string to allow faster access to init methods.
+    // We need to initialize it to NULL first to make sure the GC doesn't attempt to
+    // read it mid-allocation.
+    vm.initString = NULL;
+    vm.initString = copyString("init", 4);
+
+    // Define native functions.
     defineNative("clock", clockNative);
 }
 
@@ -87,6 +94,11 @@ void freeVM ()
 {
     freeTable(&vm.globals);
     freeTable(&vm.strings);
+
+    // Set the interned "init" string to NULL since it's about to be freed. That way,
+    // we're not leaving a dangling pointer.
+    vm.initString = NULL;
+
     freeObjects();
 }
 
@@ -138,9 +150,25 @@ static bool callValue (Value callee, int argCount)
 {
     if (IS_OBJ(callee)) {
         switch (OBJ_TYPE(callee)) {
+            case OBJ_BOUND_METHOD: {
+                ObjBoundMethod * bound = AS_BOUND_METHOD(callee);
+                // Put the receiver in the 0th slot.
+                vm.stackTop[-argCount - 1] = bound->receiver;
+                return call(bound->method, argCount);
+            }
             case OBJ_CLASS: {
                 ObjClass * klass = AS_CLASS(callee);
                 vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+
+                // If there is an `init()` method, call it.
+                Value initializer;
+                if (tableGet(&klass->methods, vm.initString, &initializer)) {
+                    return call(AS_CLOSURE(initializer), argCount);
+                } else if (argCount != 0) {
+                    runtimeError("Expected 0 arguments but got %d.", argCount);
+                    return false;
+                }
+
                 return true;
             }
             case OBJ_CLOSURE:
@@ -160,6 +188,25 @@ static bool callValue (Value callee, int argCount)
     runtimeError("Can only call functions and classes.");
 
     return false;
+}
+
+
+static bool bindMethod (ObjClass * klass, ObjString * name)
+{
+    Value method;
+    if (!tableGet(&klass->methods, name, &method)) {
+        runtimeError("Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    // The receiver is at the top of the stack.
+    ObjBoundMethod * bound = newBoundMethod(peek(0), AS_CLOSURE(method));
+    // Pop the instance off the stack.
+    pop();
+    // Push the bound method.
+    push(OBJ_VAL(bound));
+
+    return true;
 }
 
 
@@ -204,6 +251,15 @@ static void closeUpvalues (Value * last)
         upvalue->location = &upvalue->closed;
         vm.openUpvalues = upvalue->next;
     }
+}
+
+
+static void defineMethod (ObjString * name)
+{
+    Value method = peek(0);
+    ObjClass * klass = AS_CLASS(peek(1));
+    tableSet(&klass->methods, name, method);
+    pop();
 }
 
 
@@ -349,8 +405,14 @@ static InterpretResult run ()
                     break;
                 }
 
-                runtimeError("Undefined property '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
+                // If it's not a field, it might be a (bound) method.
+                // If the call to `bindMethod()` succeedes, it will place the method on
+                // the stack and return true.
+                if (!bindMethod(instance->klass, name)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                break;
             }
             case OP_SET_PROPERTY: {
                 if (!IS_INSTANCE(peek(1))) {
@@ -498,6 +560,10 @@ static InterpretResult run ()
             }
             case OP_CLASS: {
                 push(OBJ_VAL(newClass(READ_STRING())));
+                break;
+            }
+            case OP_METHOD: {
+                defineMethod(READ_STRING());
                 break;
             }
         }

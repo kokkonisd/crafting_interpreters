@@ -32,6 +32,8 @@ typedef struct {
     Table globals;
     // Interned strings.
     Table strings;
+    // Interned "init" string.
+    ObjString * initString;
     // Upvalues that are still on the stack.
     ObjUpvalue * openUpvalues;
     // The total number of bytes of managed memory.
