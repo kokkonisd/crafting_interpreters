@@ -1,0 +1,13 @@
+class Oops {
+    init () {
+        fun f () {
+            print "not a method";
+        }
+
+        this.field = f;
+    }
+}
+
+var oops = Oops();
+// This will fail with a "no 'field' method found"-type error if the bug exists.
+oops.field();

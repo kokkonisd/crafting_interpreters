@@ -573,6 +573,13 @@ static void dot (bool canAssign)
     if (canAssign && match(TOKEN_EQUAL)) {
         expression();
         emitBytes(OP_SET_PROPERTY, name);
+    } else if (match(TOKEN_LEFT_PAREN)) {
+        // This is a method call; to optimize it, we should emit a special instruction
+        // that immediately calls the method, instead of emitting one instruction to
+        // fetch the method and then another one to call it.
+        uint8_t argCount = argumentList();
+        emitBytes(OP_INVOKE, name);
+        emitByte(argCount);
     } else {
         emitBytes(OP_GET_PROPERTY, name);
     }
