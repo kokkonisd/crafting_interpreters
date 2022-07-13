@@ -80,6 +80,7 @@ typedef struct Compiler {
 
 typedef struct ClassCompiler {
     struct ClassCompiler * enclosing;
+    bool hasSuperclass;
 } ClassCompiler;
 
 
@@ -666,6 +667,36 @@ static void variable (bool canAssign)
 }
 
 
+static Token syntheticToken (const char * text)
+{
+    Token token;
+    token.start = text;
+    token.length = (int) strlen(text);
+
+    return token;
+}
+
+
+static void super_ (bool canAssign)
+{
+    if (currentClass == NULL) {
+        error("Can't use 'super' outside of a class.");
+    } else if (!currentClass->hasSuperclass) {
+        error("Can't use 'super' in a class with no superclass.");
+    }
+
+    consume(TOKEN_DOT, "Expect '.' after 'super'.");
+    consume(TOKEN_IDENTIFIER, "Expect superclass method name.");
+    uint8_t name = identifierConstant(&parser.previous);
+
+    // Look up `this` and `super` and push them to the stack. We need both the receiver
+    // and the superclass in order to make the method call.
+    namedVariable(syntheticToken("this"), false);
+    namedVariable(syntheticToken("super"), false);
+    emitBytes(OP_GET_SUPER, name);
+}
+
+
 static void this_ (bool canAssign)
 {
     // Check that the use of `this` is legal (i.e. that we are in a class).
@@ -730,7 +761,7 @@ ParseRule rules[] = {
     [TOKEN_OR]            = {NULL,     or_,    PREC_OR},
     [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
-    [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_SUPER]         = {super_,   NULL,   PREC_NONE},
     [TOKEN_THIS]          = {this_,    NULL,   PREC_NONE},
     [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
     [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
@@ -858,8 +889,33 @@ static void classDeclaration ()
     // Push a new ClassCompiler onto the "class stack", to record the stack of the
     // enclosing classes.
     ClassCompiler classCompiler;
+    classCompiler.hasSuperclass = false;
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;
+
+    // Handle inheritance (if there is any).
+    if (match(TOKEN_LESS)) {
+        consume(TOKEN_IDENTIFIER, "Expect superclass name.");
+        // Look up the superclass by name and push it on the stack.
+        variable(false);
+
+        if (identifiersEqual(&className, &parser.previous)) {
+            error("A class can't inherit from itself.");
+        }
+
+        // We need to keep a reference to the superclass, in order to make calls to
+        // `super.xxx()` work. To achieve this, we'll make a local variable here.
+        // We need a new scope to make sure that two classes that are in the same
+        // scope do not collide (since the variable, "super", always has the same name).
+        beginScope();
+        addLocal(syntheticToken("super"));
+        defineVariable(0);
+
+        // Load the subclass onto the stack.
+        namedVariable(className, false);
+        emitByte(OP_INHERIT);
+        classCompiler.hasSuperclass = true;
+    }
 
     // Load the class back on top of the stack, so that the methods can be bound to that
     // class.
@@ -871,6 +927,11 @@ static void classDeclaration ()
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     // Pop off the class name.
     emitByte(OP_POP);
+
+    // If we opened a local scope for the superclass variable, we need to close it.
+    if (classCompiler.hasSuperclass) {
+        endScope();
+    }
 
     // "Pop off" the class and restore the enclosing one.
     currentClass = currentClass->enclosing;
