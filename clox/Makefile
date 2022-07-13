@@ -1,8 +1,13 @@
 DEBUG ?= 1
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic
 DEBUG_FLAGS = -DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE -DDEBUG_STRESS_GC \
 			  -DDEBUG_LOG_GC
+# Define NaN boxing. If a specific target architecture does not support it (i.e. if it
+# does not support IEEE 754 or if it uses the full 64 bits of 64-bit pointers) then we
+# should disable it. Since this Makefile is made to run on x86_64 targets, we're keeping
+# it on.
+FEATURE_FLAGS = -DNAN_BOXING
+CFLAGS = -Wall -Wextra -Wpedantic $(FEATURE_FLAGS)
 
 SRC=src
 INC=inc

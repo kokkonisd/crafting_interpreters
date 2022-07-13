@@ -36,19 +36,54 @@ void freeValueArray (ValueArray * array)
 
 void printValue (Value value)
 {
-    switch (value.type) {
-        case VAL_BOOL:
+#   ifdef NAN_BOXING
+
+        if (IS_BOOL(value)) {
             printf(AS_BOOL(value) ? "true" : "false");
-            break;
-        case VAL_NIL: printf("nil"); break;
-        case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
-        case VAL_OBJ: printObject(value); break;
-    }
+        } else if (IS_NIL(value)) {
+            printf("nil");
+        } else if (IS_NUMBER(value)) {
+            printf("%g", AS_NUMBER(value));
+        } else if (IS_OBJ(value)) {
+            printObject(value);
+        }
+
+#   else // NAN_BOXING
+
+        switch (value.type) {
+            case VAL_BOOL:
+                printf(AS_BOOL(value) ? "true" : "false");
+                break;
+            case VAL_NIL: printf("nil"); break;
+            case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
+            case VAL_OBJ: printObject(value); break;
+        }
+
+#   endif // NAN_BOXING
 }
 
 
 bool valuesEqual (Value a, Value b)
 {
+#   ifdef NAN_BOXING
+
+    // In IEEE 754, NaN values are *not* equal to themselves. For example, the following
+    // lox program:
+    //
+    //     var nan = 0/0;
+    //     print nan == nan;
+    //
+    // should print `false`. That forces us to do a special check here for that case.
+    if (IS_NUMBER(a) && IS_NUMBER(b)) {
+        return AS_NUMBER(a) == AS_NUMBER(b);
+    }
+
+    // In every other case, if the bit representations are different, then the values
+    // are not equal.
+    return a == b;
+
+#   else // NAN_BOXING
+
     if (a.type != b.type) return false;
 
     switch (a.type) {
@@ -62,5 +97,7 @@ bool valuesEqual (Value a, Value b)
         case VAL_OBJ: return AS_OBJ(a) == AS_OBJ(b);
         default: return false; // Unreachable.
     }
+
+#   endif // NAN_BOXING
 }
 
