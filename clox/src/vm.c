@@ -514,6 +514,19 @@ static InterpretResult run ()
                 BINARY_OP(NUMBER_VAL, *);
                 break;
             }
+            case OP_MODULO: {
+                // We can't call BINARY_OP here, because we need to cast the two values
+                // to integers first for it to work. So we won't use a macro, since we
+                // only need this operation here.
+                if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {
+                    runtimeError("Operands must be numbers.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                int b = (int) AS_NUMBER(pop());
+                int a = (int) AS_NUMBER(pop());
+                push(NUMBER_VAL((double) (a % b)));
+                break;
+            }
             case OP_DIVIDE: {
                 BINARY_OP(NUMBER_VAL, /);
                 break;
