@@ -13,8 +13,6 @@ This part of the repo contains the following elements:
 - **tools/**: the directory containing metaprogramming tools used to generate
   boilerplate source files. One such example is files containing basic data-handling
   AST code, such as definitions of expression nodes.
-- **examples/**: various examples of Lox code (that may or may not compile, depending
-  on the example).
 
 
 ## How to build/run jlox
