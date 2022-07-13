@@ -35,7 +35,24 @@ static Entry * findEntry (Entry * entries, int capacity, ObjString * key)
     // collision), we use linear probing, meaning that we'll just pick the next
     // available bucket in the bucket array (wrapping up to the beginning if we reach
     // the end).
-    uint32_t index = key->hash % capacity;
+    
+    // We apply a simple optimization here: we know that the capacity of the table's
+    // entry array starts out at 8 elements and grows by a factor of 2 every time, thus
+    // making it a power of 2, always.
+    // Because the modulo operation is much slower than addition on x86, we can perform
+    // the following hack: instead of taking the modulo, we can bitwise ADD the hash and
+    // the capacity minus 1, which gives us a bit mask that shaves off the appropriate
+    // top bits of the hash.
+    //
+    // Example: 229 % 64 = 37
+    //
+    // 229 | 1 1 1 0 0 1 0 1
+    // AND
+    //  63 | 0 0 1 1 1 1 1 1
+    // ---------------------
+    //  37 | 0 0 1 0 0 1 0 1
+    uint32_t index = key->hash & (capacity - 1);
+
     Entry * tombstone = NULL;
 
     for (;;) {
@@ -55,7 +72,9 @@ static Entry * findEntry (Entry * entries, int capacity, ObjString * key)
             return entry;
         }
 
-        index = (index + 1) % capacity;
+        // Same optimization as the first calculation of index at the beginning of this
+        // function.
+        index = (index + 1) & (capacity - 1);
     }
 }
 
@@ -171,7 +190,8 @@ ObjString * tableFindString (
 {
     if (table->count == 0) return NULL;
 
-    uint32_t index = hash % table->capacity;
+    // Same optimization as in the beginning of `findEntry()`.
+    uint32_t index = hash & (table->capacity - 1);
 
     for (;;) {
         Entry * entry = &table->entries[index];
@@ -188,7 +208,8 @@ ObjString * tableFindString (
             return entry->key;
         }
 
-        index = (index + 1) % table->capacity;
+        // Same optimization as in the beginning of `findEntry()`.
+        index = (index + 1) & (table->capacity - 1);
     }
 }
 
