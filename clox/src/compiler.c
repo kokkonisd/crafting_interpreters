@@ -692,8 +692,22 @@ static void super_ (bool canAssign)
     // Look up `this` and `super` and push them to the stack. We need both the receiver
     // and the superclass in order to make the method call.
     namedVariable(syntheticToken("this"), false);
-    namedVariable(syntheticToken("super"), false);
-    emitBytes(OP_GET_SUPER, name);
+
+    // We can optimize superclass method calls here; if we detect an opening parenthesis
+    // right after `super.xxx`, then it is a direct method invocation. In that case, we
+    // can emit a special instruction that is faster than loading and then calling the
+    // superclass method. A similar optimization is implemented in `dot()` for normal
+    // method invocations.
+    if (match(TOKEN_LEFT_PAREN)) {
+        uint8_t argCount = argumentList();
+        namedVariable(syntheticToken("super"), false);
+        emitBytes(OP_SUPER_INVOKE, name);
+        emitByte(argCount);
+    } else {
+        // No invocation, so we proceed normally by simply fetching the method.
+        namedVariable(syntheticToken("super"), false);
+        emitBytes(OP_GET_SUPER, name);
+    }
 }
 
 
